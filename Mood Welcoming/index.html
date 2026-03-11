@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Monitoring Mood - SIT Ar-Rahmah</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none; /* Mencegah layar terblok biru saat disentuh */
+        }
+        body {
+            background-color: #f0fdf4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        .logo-text {
+            font-size: 2.5rem;
+            color: #166534; 
+            font-weight: bold;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+        .greeting {
+            font-size: 5rem;
+            color: #1f2937;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .subtitle {
+            font-size: 2.5rem;
+            color: #4b5563;
+        }
+        .recap-board {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            color: #374151;
+            font-weight: bold;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #bbf7d0;
+        }
+        .recap-total {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #166534;
+            border-bottom: 2px dashed #e5e7eb;
+            padding-bottom: 5px;
+            width: 100%;
+            text-align: center;
+        }
+        .recap-details {
+            display: flex;
+            gap: 20px;
+            font-size: 1.3rem;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .interaction-section {
+            height: 40vh; 
+            background-color: #ffffff;
+            border-top-left-radius: 50px;
+            border-top-right-radius: 50px;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 5;
+        }
+        .emoji-btn {
+            background: none;
+            border: none;
+            font-size: 8rem; 
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .emoji-btn:active {
+            transform: scale(0.85); 
+        }
+        .emoji-label {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4b5563;
+            margin-top: 15px;
+        }
+        .toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: #166534;
+            color: white;
+            padding: 2rem 4rem;
+            font-size: 4rem;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            pointer-events: none; 
+        }
+        .toast.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="soundTing" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
+    <audio id="soundSenang" src="senang.wav" preload="auto"></audio>
+    <audio id="soundBiasa" src="biasa.wav" preload="auto"></audio>
+    <audio id="soundSedih" src="sedih.wav" preload="auto"></audio>
+
+    <div class="recap-board" id="recapBoard">
+        <div class="recap-total">Total Hadir: <span id="totalCount">0</span></div>
+        <div class="recap-details">
+            <div class="detail-item">😄 <span id="countSenang">0</span></div>
+            <div class="detail-item">🙂 <span id="countBiasa">0</span></div>
+            <div class="detail-item">🥺 <span id="countSedih">0</span></div>
+        </div>
+    </div>
+
+    <div class="header-section">
+        <div class="logo-text">SIT AR-RAHMAH MAKASSAR</div>
+        <div class="greeting">Selamat Datang Kembali! ✨</div>
+        <div class="subtitle">Sentuh layar, bagaimana perasaanmu pagi ini?</div>
+    </div>
+
+    <div class="interaction-section">
+        <button class="emoji-btn" onclick="recordMood('senang')">
+            😄
+            <span class="emoji-label">Sangat Senang!</span>
+        </button>
+        <button class="emoji-btn" onclick="recordMood('biasa')">
+            🙂
+            <span class="emoji-label">Biasa Saja</span>
+        </button>
+        <button class="emoji-btn" onclick="recordMood('sedih')">
+            🥺
+            <span class="emoji-label">Masih Ngantuk</span>
+        </button>
+    </div>
+
+    <div class="toast" id="toastMessage">Terima Kasih! 🎉</div>
+
+    <script>
+        let totalSiswa = 0;
+        let moodData = { senang: 0, biasa: 0, sedih: 0 };
+        
+        // URL APLIKASI WEB GOOGLE SCRIPT USTAZ
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbydQv689qnUX-j2r8euOIq8jlEW0gEpR5FoCavRFUeMulH23CtYwM_kvNWuGEKvwcIh/exec';
+        
+        // Deklarasi Variabel Audio
+        const audioTing = document.getElementById('soundTing');
+        const audioSenang = document.getElementById('soundSenang');
+        const audioBiasa = document.getElementById('soundBiasa');
+        const audioSedih = document.getElementById('soundSedih');
+
+        function recordMood(mood) {
+            // 1. Tambah Angka di Layar
+            totalSiswa++;
+            document.getElementById('totalCount').innerText = totalSiswa;
+
+            moodData[mood]++;
+            const idTarget = 'count' + mood.charAt(0).toUpperCase() + mood.slice(1);
+            document.getElementById(idTarget).innerText = moodData[mood];
+
+            // 2. Mainkan Suara Cling
+            if (audioTing) {
+                audioTing.currentTime = 0; 
+                audioTing.play().catch(e => console.log("Menunggu interaksi layar"));
+            }
+
+            // 3. Mainkan Suara Karakter (Jeda 0.4 detik agar elegan)
+            setTimeout(() => {
+                if(mood === 'senang' && audioSenang) {
+                    audioSenang.currentTime = 0; 
+                    audioSenang.play().catch(e => console.log("File senang.wav belum ada"));
+                } else if(mood === 'biasa' && audioBiasa) {
+                    audioBiasa.currentTime = 0; 
+                    audioBiasa.play().catch(e => console.log("File biasa.wav belum ada"));
+                } else if(mood === 'sedih' && audioSedih) {
+                    audioSedih.currentTime = 0; 
+                    audioSedih.play().catch(e => console.log("File sedih.wav belum ada"));
+                }
+            }, 400); 
+
+            // 4. Mainkan Animasi Confetti
+            if (typeof confetti !== 'undefined') {
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.8 }, 
+                    colors: ['#166534', '#facc15', '#ffffff'],
+                    zIndex: 90
+                });
+            }
+
+            // 5. Munculkan Pop-up
+            const toast = document.getElementById('toastMessage');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1200); 
+
+            // 6. Mengirim Data ke Google Sheets di Latar Belakang
+            let formData = new FormData();
+            formData.append('mood', mood);
+
+            fetch(scriptURL, { 
+                method: 'POST', 
+                body: formData 
+            })
+            .then(response => console.log('Sukses: Data masuk ke Google Sheets!'))
+            .catch(error => console.error('Gagal mengirim ke Sheets:', error.message));
+        }
+    </script>
+</body>
+</html>
