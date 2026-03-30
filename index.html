@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mood TV Mode</title>
+<title>Mood Monitoring</title>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
@@ -12,79 +12,83 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     user-select: none;
 }
 
-html, body {
-    height: 100%;
-    overflow: hidden;
-    background: #f0fdf4;
-}
-
-/* AUTO SCALE */
-#app {
-    width: 1920px;
-    height: 1080px;
-    transform-origin: top center;
+body {
+    background: linear-gradient(to bottom, #f0fdf4, #dcfce7);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* HEADER */
 .header {
     text-align: center;
-    padding: 10px;
+    padding: 20px 10px;
 }
 
 .title {
     font-size: 2rem;
-    color: #166534;
     font-weight: bold;
+    color: #166534;
 }
 
 .greeting {
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-size: 3rem;
+    font-weight: 800;
 }
 
 .subtitle {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     color: #555;
 }
 
 /* RECAP */
 .recap {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 20px;
     background: white;
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-size: 1rem;
+    padding: 12px 18px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    font-size: 1.1rem;
 }
 
-/* EMOJI */
+/* EMOJI AREA */
 .emoji-area {
+    flex: 1;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-evenly;
     align-items: center;
-    height: 60%;
+    padding: 20px;
 }
 
 .emoji-btn {
-    font-size: 5rem;
+    font-size: 8rem;
     border: none;
     background: none;
     cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.emoji-btn:active {
+    transform: scale(0.85);
 }
 
 .label {
     display: block;
-    font-size: 1rem;
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: #374151;
+    font-weight: bold;
 }
 
 /* TOAST */
 .toast {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
@@ -94,10 +98,27 @@ html, body {
     font-size: 2rem;
     border-radius: 20px;
     transition: 0.3s;
+    z-index: 100;
 }
 
 .toast.show {
     transform: translate(-50%, -50%) scale(1);
+}
+
+/* RESPONSIVE HP */
+@media (max-width: 768px) {
+    .emoji-area {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .emoji-btn {
+        font-size: 5rem;
+    }
+
+    .greeting {
+        font-size: 2rem;
+    }
 }
 </style>
 </head>
@@ -105,13 +126,12 @@ html, body {
 <body>
 
 <!-- AUDIO -->
-<audio id="ting" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
-<audio id="senangSound" src="senang.wav" preload="auto"></audio>
-<audio id="biasaSound" src="biasa.wav" preload="auto"></audio>
-<audio id="sedihSound" src="sedih.wav" preload="auto"></audio>
+<audio id="ting" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+<audio id="senangSound" src="senang.wav"></audio>
+<audio id="biasaSound" src="biasa.wav"></audio>
+<audio id="sedihSound" src="sedih.wav"></audio>
 
-<div id="app">
-
+<!-- RECAP -->
 <div class="recap">
     Total: <span id="total">0</span><br>
     😄 <span id="senang">0</span> |
@@ -119,12 +139,14 @@ html, body {
     🥺 <span id="sedih">0</span>
 </div>
 
+<!-- HEADER -->
 <div class="header">
     <div class="title">SIT AR-RAHMAH</div>
     <div class="greeting">Selamat Datang ✨</div>
     <div class="subtitle">Bagaimana perasaanmu hari ini?</div>
 </div>
 
+<!-- EMOJI -->
 <div class="emoji-area">
     <button class="emoji-btn" onclick="klik('senang')">
         😄<span class="label">Senang</span>
@@ -137,44 +159,21 @@ html, body {
     </button>
 </div>
 
+<!-- TOAST -->
 <div class="toast" id="toast">Terima Kasih! 🎉</div>
 
-</div>
-
 <script>
-// =====================
-// AUTO SCALE TV
-// =====================
-function autoScale() {
-    const baseWidth = 1920;
-    const baseHeight = 1080;
-
-    const scaleX = window.innerWidth / baseWidth;
-    const scaleY = window.innerHeight / baseHeight;
-
-    const scale = Math.min(scaleX, scaleY);
-
-    document.getElementById("app").style.transform = `scale(${scale})`;
-}
-window.addEventListener("resize", autoScale);
-autoScale();
-
-
-// =====================
 // AUDIO
-// =====================
 const ting = document.getElementById("ting");
 const senangSound = document.getElementById("senangSound");
 const biasaSound = document.getElementById("biasaSound");
 const sedihSound = document.getElementById("sedihSound");
 
-
-// =====================
-// DATA (LOCAL STORAGE)
-// =====================
+// DATA
 let total = 0;
 let mood = { senang:0, biasa:0, sedih:0 };
 
+// LOAD DATA
 const saved = localStorage.getItem("moodTV");
 if(saved){
     const data = JSON.parse(saved);
@@ -182,7 +181,6 @@ if(saved){
     mood = data.mood;
 }
 
-// update awal
 updateUI();
 
 function updateUI(){
@@ -192,49 +190,35 @@ function updateUI(){
     document.getElementById("sedih").innerText = mood.sedih;
 }
 
-
-// =====================
-// KLIK EMOJI
-// =====================
+// KLIK
 function klik(jenis){
 
     total++;
     mood[jenis]++;
-
     updateUI();
 
-    // simpan
+    // SIMPAN
     localStorage.setItem("moodTV", JSON.stringify({
         total: total,
         mood: mood
     }));
 
-    // SOUND TING
+    // SOUND
     if (ting) {
         ting.currentTime = 0;
         ting.play().catch(()=>{});
     }
 
-    // SOUND MOOD
     setTimeout(() => {
-        if (jenis === "senang" && senangSound) {
-            senangSound.currentTime = 0;
-            senangSound.play().catch(()=>{});
-        } 
-        else if (jenis === "biasa" && biasaSound) {
-            biasaSound.currentTime = 0;
-            biasaSound.play().catch(()=>{});
-        } 
-        else if (jenis === "sedih" && sedihSound) {
-            sedihSound.currentTime = 0;
-            sedihSound.play().catch(()=>{});
-        }
+        if (jenis === "senang") senangSound.play().catch(()=>{});
+        if (jenis === "biasa") biasaSound.play().catch(()=>{});
+        if (jenis === "sedih") sedihSound.play().catch(()=>{});
     }, 300);
 
     // CONFETTI
     confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 120,
+        spread: 80,
         origin: { y: 0.7 }
     });
 
@@ -244,10 +228,7 @@ function klik(jenis){
     setTimeout(()=> t.classList.remove("show"), 1000);
 }
 
-
-// =====================
-// AUTO FULLSCREEN (TERGANTUNG TV)
-// =====================
+// FULLSCREEN (opsional TV)
 document.body.addEventListener("click", ()=>{
     if(document.documentElement.requestFullscreen){
         document.documentElement.requestFullscreen();
