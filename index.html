@@ -22,10 +22,10 @@ html, body {
     background: #f0fdf4;
 }
 
-/* AUTO SCALE UNTUK TV */
+/* AUTO SCALE */
 #app {
-    width: 100vw;
-    height: 100vh;
+    width: 1920px;
+    height: 1080px;
     transform-origin: top center;
 }
 
@@ -62,13 +62,12 @@ html, body {
     font-size: 1rem;
 }
 
-/* EMOJI AREA */
+/* EMOJI */
 .emoji-area {
     display: flex;
     justify-content: space-around;
     align-items: center;
     height: 60%;
-    flex-wrap: wrap;
 }
 
 .emoji-btn {
@@ -105,6 +104,12 @@ html, body {
 
 <body>
 
+<!-- AUDIO -->
+<audio id="ting" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
+<audio id="senangSound" src="senang.wav" preload="auto"></audio>
+<audio id="biasaSound" src="biasa.wav" preload="auto"></audio>
+<audio id="sedihSound" src="sedih.wav" preload="auto"></audio>
+
 <div id="app">
 
 <div class="recap">
@@ -132,7 +137,7 @@ html, body {
     </button>
 </div>
 
-<div class="toast" id="toast">Terima Kasih!</div>
+<div class="toast" id="toast">Terima Kasih! 🎉</div>
 
 </div>
 
@@ -156,6 +161,15 @@ autoScale();
 
 
 // =====================
+// AUDIO
+// =====================
+const ting = document.getElementById("ting");
+const senangSound = document.getElementById("senangSound");
+const biasaSound = document.getElementById("biasaSound");
+const sedihSound = document.getElementById("sedihSound");
+
+
+// =====================
 // DATA (LOCAL STORAGE)
 // =====================
 let total = 0;
@@ -168,7 +182,7 @@ if(saved){
     mood = data.mood;
 }
 
-// update UI awal
+// update awal
 updateUI();
 
 function updateUI(){
@@ -177,6 +191,7 @@ function updateUI(){
     document.getElementById("biasa").innerText = mood.biasa;
     document.getElementById("sedih").innerText = mood.sedih;
 }
+
 
 // =====================
 // KLIK EMOJI
@@ -194,14 +209,36 @@ function klik(jenis){
         mood: mood
     }));
 
-    // confetti
+    // SOUND TING
+    if (ting) {
+        ting.currentTime = 0;
+        ting.play().catch(()=>{});
+    }
+
+    // SOUND MOOD
+    setTimeout(() => {
+        if (jenis === "senang" && senangSound) {
+            senangSound.currentTime = 0;
+            senangSound.play().catch(()=>{});
+        } 
+        else if (jenis === "biasa" && biasaSound) {
+            biasaSound.currentTime = 0;
+            biasaSound.play().catch(()=>{});
+        } 
+        else if (jenis === "sedih" && sedihSound) {
+            sedihSound.currentTime = 0;
+            sedihSound.play().catch(()=>{});
+        }
+    }, 300);
+
+    // CONFETTI
     confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.7 }
     });
 
-    // toast
+    // TOAST
     const t = document.getElementById("toast");
     t.classList.add("show");
     setTimeout(()=> t.classList.remove("show"), 1000);
@@ -209,7 +246,7 @@ function klik(jenis){
 
 
 // =====================
-// FULLSCREEN AUTO (TERGANTUNG TV)
+// AUTO FULLSCREEN (TERGANTUNG TV)
 // =====================
 document.body.addEventListener("click", ()=>{
     if(document.documentElement.requestFullscreen){
